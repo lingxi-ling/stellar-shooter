@@ -114,6 +114,10 @@ body {
 		</style>
 		<link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
 <link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
+		<!-- 提前发起引擎下载，不必等 JS 解析完再开始，移动端首屏能省下整个往返延迟 -->
+		<link rel="preload" href="index.js" as="script" />
+		<link rel="preload" href="index.wasm" as="fetch" type="application/wasm" crossorigin />
+		<link rel="preload" href="index.pck" as="fetch" crossorigin />
 
 	</head>
 	<body>
@@ -226,6 +230,12 @@ const engine = new Engine(GODOT_CONFIG);
 				if (current > 0 && total > 0) {
 					statusProgress.value = current;
 					statusProgress.max = total;
+					// 下载接近完成时切到"正在启动引擎"：满进度之后还要编译
+					// WebAssembly 并初始化，这段时间进度条不再前进，不提示会被当成卡死。
+					if (current / total >= 0.995) {
+						statusNotice.textContent = '正在启动引擎…';
+						statusNotice.style.display = 'block';
+					}
 				} else {
 					statusProgress.removeAttribute('value');
 					statusProgress.removeAttribute('max');
